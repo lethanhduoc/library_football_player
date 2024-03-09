@@ -1,4 +1,4 @@
-package com.example.library_player_football
+package com.example.data_hiding_app
 
 import io.flutter.embedding.android.FlutterActivity
 

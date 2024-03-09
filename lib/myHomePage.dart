@@ -1,11 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:speech_to_text/speech_to_text.dart';
+// import 'package:speech_to_text/speech_to_text.dart';
+import 'package:http/http.dart' as http;
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({super.key});
@@ -15,15 +18,15 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final SpeechToText _speechToText = SpeechToText();
-  bool _speechEnabled = false;
+  // final SpeechToText _speechToText = SpeechToText();
   bool _isListening = false;
   String _wordsSpoken = "";
-  double _confidenceLevel = 0;
   bool search = false;
+  String toList = "";
   File? saveImage;
   final TextEditingController contentController = TextEditingController();
   Uint8List webImage = Uint8List(8);
+
   Future<void> pickImage() async {
     if (!kIsWeb) {
       final ImagePicker picker0 = ImagePicker();
@@ -44,12 +47,37 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {
           webImage = f;
           saveImage = File('a');
+          _uploadData(webImage);
         });
+        print(image);
       } else {
         print("No image has been picked");
       }
     } else {
       print("Something went wrong");
+    }
+  }
+
+  Future<void> _uploadData(Uint8List imageChoose) async {
+    try {
+      String base64Image = base64Encode(imageChoose);
+
+      final response = await http.post(
+        Uri.parse('http://127.0.0.1:8000/get_embedding'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({"image": base64Image}),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        print(data['embedding']);
+      } else {
+        throw Exception('Failed to get embedding');
+      }
+    } catch (e) {
+      print("Error: $e");
     }
   }
 
@@ -60,23 +88,21 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void initSpeech() async {
-    _speechEnabled = await _speechToText.initialize();
     setState(() {});
   }
 
-  void _startListening() async {
-    await _speechToText.listen(onResult: _onSpeechResult);
-  }
+  // void _startListening() async {
+  //   await _speechToText.listen(onResult: _onSpeechResult);
+  // }
 
-  void _stopListening() async {
-    await _speechToText.stop();
-    setState(() {});
-  }
+  // void _stopListening() async {
+  //   await _speechToText.stop();
+  //   setState(() {});
+  // }
 
   void _onSpeechResult(result) {
     setState(() {
       _wordsSpoken = "${result.recognizedWords}";
-      _confidenceLevel = result.confidence;
     });
   }
 
@@ -143,9 +169,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                 },
                                 icon: const Icon(Icons.search),
                               ),
-                              hintText: _speechToText.isListening
-                                  ? 'Chúng tôi đang lắng nghe...'
-                                  : 'Nhập tên cầu thủ mà bạn muốn tìm thông tin...',
+                              // hintText: _speechToText.isListening
+                              //     ? 'Chúng tôi đang lắng nghe...'
+                              //     : 'Nhập tên cầu thủ mà bạn muốn tìm thông tin...',
                               hintStyle: const TextStyle(fontSize: 14),
                               border: InputBorder.none),
                         ),
@@ -167,9 +193,9 @@ class _MyHomePageState extends State<MyHomePage> {
                         setState(() {
                           _isListening = true;
                         });
-                        _speechToText.isListening
-                            ? _stopListening()
-                            : _startListening();
+                        // _speechToText.isListening
+                        //     ? _stopListening()
+                        //     : _startListening();
                       },
                       icon: const Icon(
                         Icons.mic_none_outlined,
